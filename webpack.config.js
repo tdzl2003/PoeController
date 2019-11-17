@@ -6,7 +6,7 @@ module.exports = () => ({
   context: __dirname,
   output: {
     path: path.resolve(__dirname, 'dist'),
-    filename: 'index.js',
+    filename: '[name].js',
   },
   entry: {
     index: './src',
