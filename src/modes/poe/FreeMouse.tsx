@@ -1,25 +1,17 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useAddListener, RIGHT_JOY_STICK, TRIGGER } from '../../lib/controller';
+import {
+  useAddListener,
+  RIGHT_JOY_STICK,
+  TRIGGER,
+  useTriggerRange,
+} from '../../lib/controller';
 import { getMousePos, moveMouse, getScreenSize } from 'robotjs';
 import { useLeftBtnDown } from '../../lib/mouse';
 
 const MOVE_SPEED = 0.05 * getScreenSize().height;
 
 export function MouseTrigger() {
-  const [mouseDown, setMouseDown] = React.useState(false);
-  const mouseRef = useRef(mouseDown);
-
-  useAddListener(
-    TRIGGER,
-    v => {
-      const state = v < -0.5;
-      if (mouseRef.current !== state) {
-        mouseRef.current = state;
-        setMouseDown(state);
-      }
-    },
-    [],
-  );
+  const mouseDown = useTriggerRange(-Infinity, -0.5);
   useLeftBtnDown(mouseDown);
 
   return null;

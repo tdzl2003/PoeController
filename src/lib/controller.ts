@@ -1,5 +1,5 @@
 import { EventEmitter } from 'fbemitter';
-import React, { DependencyList } from 'react';
+import React, { DependencyList, useRef } from 'react';
 const HID = require('node-hid');
 
 function createHIDController() {
@@ -35,23 +35,63 @@ export const DATA = 'data';
 export const LEFT_JOY_STICK = 'leftJoyStick';
 export const RIGHT_JOY_STICK = 'rightJoyStick';
 export const TRIGGER = 'trigger';
+export const KEY_DOWN = 'keyDown';
+export const KEY_UP = 'keyUp';
+
+export enum KeyCode {
+  Y = 8,
+  A = 1,
+  X = 4,
+  B = 2,
+  LB = 16,
+  RB = 32,
+  SELECT = 64,
+  START = 128,
+}
 
 const emitter = new EventEmitter();
 export default emitter;
 
+let lastData: Buffer;
+let currTriggerPos: number = 0;
+let currKeyState: number = 0;
+
+export function isKeyDown(key: KeyCode) {
+  return (currKeyState & key) !== 0;
+}
+
 function onData(data: Buffer) {
   emitter.emit(DATA, data);
-  emitter.emit(
-    LEFT_JOY_STICK,
-    translateJoyStickAxis(data[1]),
-    translateJoyStickAxis(data[3]),
-  );
-  emitter.emit(
-    RIGHT_JOY_STICK,
-    translateJoyStickAxis(data[5]),
-    translateJoyStickAxis(data[7]),
-  );
-  emitter.emit(TRIGGER, translateJoyStickAxis(data[9]));
+  currKeyState = data[10];
+  currTriggerPos = translateJoyStickAxis(data[9]);
+
+  if (!lastData || data[1] !== lastData[1] || data[3] !== lastData[3]) {
+    emitter.emit(
+      LEFT_JOY_STICK,
+      translateJoyStickAxis(data[1]),
+      translateJoyStickAxis(data[3]),
+    );
+  }
+  if (!lastData || data[5] !== lastData[5] || data[7] !== lastData[7]) {
+    emitter.emit(
+      RIGHT_JOY_STICK,
+      translateJoyStickAxis(data[5]),
+      translateJoyStickAxis(data[7]),
+    );
+  }
+  if (!lastData || data[9] !== lastData[9]) {
+    emitter.emit(TRIGGER, currTriggerPos);
+  }
+
+  for (let v = 0; v < 7; v++) {
+    const k = (1 << v) as KeyCode;
+    if (!lastData || (data[10] & k) !== (lastData[10] & k)) {
+      const eventName = data[10] & k ? KEY_DOWN : KEY_UP;
+      emitter.emit(eventName, k);
+    }
+  }
+
+  lastData = data;
 }
 
 controller.addListener('data', onData);
@@ -72,6 +112,11 @@ export function useAddListener(
   deps?: DependencyList,
 ): void;
 export function useAddListener(
+  eventName: typeof KEY_DOWN | typeof KEY_UP,
+  handler: (v: KeyCode) => void,
+  deps?: DependencyList,
+): void;
+export function useAddListener(
   eventName: string,
   listener: Function,
   deps?: DependencyList,
@@ -83,4 +128,24 @@ export function useAddListener(
     },
     deps ? [eventName, ...deps] : [eventName],
   );
+}
+
+export function useTriggerRange(min: number, max: number) {
+  const [active, setActive] = React.useState(() => {
+    return currTriggerPos >= min && currTriggerPos <= max;
+  });
+  const activeRef = useRef(active);
+
+  useAddListener(
+    TRIGGER,
+    v => {
+      const state = v >= min && v <= max;
+      if (activeRef.current !== state) {
+        activeRef.current = state;
+        setActive(state);
+      }
+    },
+    [min, max],
+  );
+  return active;
 }

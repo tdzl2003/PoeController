@@ -5,10 +5,14 @@ import {
   LEFT_JOY_STICK,
   RIGHT_JOY_STICK,
   TRIGGER,
+  KeyCode,
+  KEY_DOWN,
+  KEY_UP,
 } from '../../lib/controller';
 import { Text, Color } from 'ink';
 import StickMovement from './StickMovement';
 import FreeMouse, { MouseTrigger } from './FreeMouse';
+import { SkillShiftButton, PotionKeyMap, SkillKeyMap } from './Keymap';
 
 function DataPreview() {
   const [text, setText] = React.useState('no data');
@@ -26,6 +30,46 @@ function TriggerPreview() {
   });
 
   return <Text>Trigger: {value}</Text>;
+}
+
+function SingleKeyPreview({ keyCode }: { keyCode: KeyCode }) {
+  const [value, setValue] = React.useState(false);
+  useAddListener(
+    KEY_DOWN,
+    code => {
+      if (code === keyCode) {
+        setValue(true);
+      }
+    },
+    [keyCode],
+  );
+  useAddListener(
+    KEY_UP,
+    code => {
+      if (code === keyCode) {
+        setValue(false);
+      }
+    },
+    [keyCode],
+  );
+
+  return <>{value ? KeyCode[keyCode] + ' ' : null}</>;
+}
+
+function KeyPreview() {
+  const [value, setValue] = React.useState(0);
+  useAddListener(DATA, buf => {
+    setValue(buf[10]);
+  });
+
+  return (
+    <Text>
+      Keys:{' '}
+      {new Array(8).fill(0).map((v, i) => (
+        <SingleKeyPreview keyCode={(1 << i) as KeyCode} key={i} />
+      ))}
+    </Text>
+  );
 }
 
 function StickState({ type }: { type: 'left' | 'right' }) {
@@ -55,9 +99,13 @@ export default function Poe() {
       <StickState type="left" />
       <StickState type="right" />
       <TriggerPreview />
+      <KeyPreview />
       <FreeMouse />
       <StickMovement />
       <MouseTrigger />
+      <SkillShiftButton />
+      <PotionKeyMap />
+      <SkillKeyMap />
     </React.Fragment>
   );
 }
