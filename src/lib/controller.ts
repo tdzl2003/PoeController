@@ -33,6 +33,8 @@ function translateJoyStickAxis(x: number) {
 // 事件定义
 export const DATA = 'data';
 export const LEFT_JOY_STICK = 'leftJoyStick';
+export const RIGHT_JOY_STICK = 'rightJoyStick';
+export const TRIGGER = 'trigger';
 
 const emitter = new EventEmitter();
 export default emitter;
@@ -44,6 +46,12 @@ function onData(data: Buffer) {
     translateJoyStickAxis(data[1]),
     translateJoyStickAxis(data[3]),
   );
+  emitter.emit(
+    RIGHT_JOY_STICK,
+    translateJoyStickAxis(data[5]),
+    translateJoyStickAxis(data[7]),
+  );
+  emitter.emit(TRIGGER, translateJoyStickAxis(data[9]));
 }
 
 controller.addListener('data', onData);
@@ -54,8 +62,13 @@ export function useAddListener(
   deps?: DependencyList,
 ): void;
 export function useAddListener(
-  eventName: typeof LEFT_JOY_STICK,
+  eventName: typeof LEFT_JOY_STICK | typeof RIGHT_JOY_STICK,
   handler: (x: number, y: number) => void,
+  deps?: DependencyList,
+): void;
+export function useAddListener(
+  eventName: typeof TRIGGER,
+  handler: (v: number) => void,
   deps?: DependencyList,
 ): void;
 export function useAddListener(
