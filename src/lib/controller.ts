@@ -1,5 +1,5 @@
-import { handleLeftJoyStick } from './mode';
-
+import { EventEmitter } from 'fbemitter';
+import React, { DependencyList } from 'react';
 const HID = require('node-hid');
 
 function createHIDController() {
@@ -30,11 +30,44 @@ function translateJoyStickAxis(x: number) {
   return (x - 128) / 127;
 }
 
+// 事件定义
+export const DATA = 'data';
+export const LEFT_JOY_STICK = 'leftJoyStick';
+
+const emitter = new EventEmitter();
+export default emitter;
+
 function onData(data: Buffer) {
-  handleLeftJoyStick(
+  emitter.emit(DATA, data);
+  emitter.emit(
+    LEFT_JOY_STICK,
     translateJoyStickAxis(data[1]),
-    translateJoyStickAxis(data[2]),
+    translateJoyStickAxis(data[3]),
   );
 }
 
 controller.addListener('data', onData);
+
+export function useAddListener(
+  eventName: typeof DATA,
+  handler: (buf: Buffer) => void,
+  deps?: DependencyList,
+): void;
+export function useAddListener(
+  eventName: typeof LEFT_JOY_STICK,
+  handler: (x: number, y: number) => void,
+  deps?: DependencyList,
+): void;
+export function useAddListener(
+  eventName: string,
+  listener: Function,
+  deps?: DependencyList,
+) {
+  React.useEffect(
+    () => {
+      const sub = emitter.addListener(eventName, listener);
+      return () => sub.remove();
+    },
+    deps ? [eventName, ...deps] : [eventName],
+  );
+}

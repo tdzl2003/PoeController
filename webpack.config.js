@@ -12,7 +12,7 @@ module.exports = () => ({
     index: './src',
   },
   resolve: {
-    extensions: ['.ts', '.js'],
+    extensions: ['.ts', '.tsx', '.js', '.jsx'],
   },
   resolveLoader: {
     extensions: ['.js'],

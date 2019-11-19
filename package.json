@@ -18,7 +18,12 @@
     "webpack-cli": "^3.3.10"
   },
   "dependencies": {
+    "@types/fbemitter": "^2.0.32",
+    "@types/react": "^16.9.11",
+    "fbemitter": "^2.1.1",
+    "ink": "^2.5.0",
     "node-hid": "^0.7.9",
+    "react": "^16.12.0",
     "robotjs": "^0.5.1"
   }
 }
